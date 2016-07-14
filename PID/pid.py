@@ -31,8 +31,8 @@ class WallE():
     #get the angle
     def getSteeringCmd(self,error,fullLeft,fullRight):
         Kp =2
-        Kd =-.5
-        de= ((self.e1-self.e2)+(error-self.e1))/2
+        Kd =0
+        de= ((self.e1-self.e2)+(error-self.e1))/.2
         self.e2=self.e1
     self.e1=error
         u=Kp*error+Kd*de
