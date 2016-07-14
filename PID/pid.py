@@ -34,7 +34,7 @@ class WallE():
         Kd =-.5
         de= ((self.e1-self.e2)+(error-self.e1))/2
         self.e2=self.e1
-    self.e1=error
+        self.e1=error
         u=Kp*error+Kd*de
         return self.clip(fullLeft,fullRight,u)
     
