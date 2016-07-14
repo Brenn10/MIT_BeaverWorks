@@ -7,30 +7,42 @@ import numpy
 # node specific imports
 from ackermann_msgs.msg import AckermannDriveStamped # steering messages
 from sensor_msgs.msg import LaserScan, Joy # joystick and laser scanner msgs
+from numpy.core.defchararray import lower
 class WallE():
     
     # variable to return distance to wall from callback
     # (at 90 and 60 degrees to left of vehicle)
     #scan = [0.0, 0.0] # Ensure it is created before being used
     angle=0
+    e1=0
+    e2=0
     
     def getError(self,goal,L,begin,end):
         return goal-(min(L[begin:end]))
     
-    #get the angle
-    def getSteeringCmd(self,error,threshold,fullLeft,fullRight):
-        if(abs(error)<threshold):
-            return 0
-        elif error>0:
-            return fullLeft
+    def clip(self,high,low,value):
+        if high<value:
+            return high
+        elif value<low:
+            return low
         else:
-            return fullRight
+            return value
+        
+    #get the angle
+    def getSteeringCmd(self,error,fullLeft,fullRight):
+        Kp =2
+        Kd =-.5
+        de= ((self.e1-self.e2)+(error-self.e1))/2
+        self.e2=self.e1
+    self.e1=error
+        u=Kp*error+Kd*de
+        return self.clip(fullLeft,fullRight,u)
     
     #passed to the subscriber
     def callback(self,msg):
         #get the laser information
-        error=self.getError(.4, msg.ranges, 540, 930)
-        self.angle=self.getSteeringCmd(error, .03, -1, 1)
+        error=self.getError(.4, msg.ranges, 200, 540)
+        self.angle=self.getSteeringCmd(error, -1, 1)
         
     def shutdown(self):
         rospy.loginfo("Stopping the robot...")
