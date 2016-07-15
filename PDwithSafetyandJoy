@@ -22,10 +22,10 @@ class WallE():
     error = []
     
     def getIntegral(newError):
-        if len(error) > 39:
-            error.pop(0)
-        error.append(newError)
-        return (i for i in error)
+        if len(self.error) > 39:
+            self.error.pop(0)
+        self.error.append(newError)
+        return (i for i in self.error)
 
     def getError(self,goal,L,begin,end):
         return goal-(min(L[begin:end]))
