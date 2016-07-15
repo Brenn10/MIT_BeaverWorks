@@ -8,6 +8,7 @@ import numpy
 from ackermann_msgs.msg import AckermannDriveStamped # steering messages
 from sensor_msgs.msg import LaserScan, Joy # joystick and laser scanner msgs
 from numpy.core.defchararray import lower
+
 class WallE():
     
     # variable to return distance to wall from callback
@@ -16,13 +17,20 @@ class WallE():
     angle=0
     e1=0
     e2=0
-	right=True
+    right=True
     death=False
+    error = []
+    
+    def getIntegral(newError):
+        if len(error) > 39:
+            error.pop(0)
+        error.append(newError)
+        return (i for i in error)
 
     def getError(self,goal,L,begin,end):
         return goal-(min(L[begin:end]))
     
-    def clip(self,first,second,value)
+    def clip(self,low,high,value):
         if high<value:
             return high
         elif value<low:
@@ -32,32 +40,31 @@ class WallE():
         
     #get the angle
     def getSteeringCmd(self,error,fullLeft,fullRight):
-        Kp =2
-        Kd =0
+        Kp =.6
+        Kd = .7
         de= ((self.e1-self.e2)+(error-self.e1))/.2
         self.e2=self.e1
-    self.e1=error
+        self.e1=error
         u=Kp*error+Kd*de
         return self.clip(fullLeft,fullRight,u)
     
     #passed to the subscriber
     def callback(self,msg):
         #get the laser information
-        if self.right:
-		    error=self.getError(.4, msg.ranges, 200, 540)
-		    self.angle=self.getSteeringCmd(error, -1, 1)
-			self.death=min(msg.ranges[540:555])<.3
-		
-		else:
-			error=self.getError(.4, msg.ranges, 540,900)
-		    self.angle=self.getSteeringCmd(-error, -1, 1)
-			self.death=min(msg.ranges[525:540])<.3:
+        if self.right: #right
+            error=self.getError(.75, msg.ranges, 200, 540)
+            self.angle=self.getSteeringCmd(error, -1, 1)
+            self.death=min(msg.ranges[525:555])<.5
+        else: #left
+            error=self.getError(.75, msg.ranges, 540,900)
+            self.angle=self.getSteeringCmd(-error, -1, 1)
+            self.death=min(msg.ranges[525:555])<.5
 
-	def callback2(self, msg):
-		if(msg.buttons[0]):
-			self.right = True
-		elif(msg.buttons[1]):
-			self.right = False
+    def callback2(self, msg):
+        if(msg.buttons[0]):
+            self.right = True
+        elif(msg.buttons[1]):
+            self.right = False
         
     def shutdown(self):
         rospy.loginfo("Stopping the robot...")
@@ -79,10 +86,10 @@ class WallE():
         
         #sets the subscriber
         rospy.Subscriber('scan', LaserScan, self.callback)
-	rospy.Subscriber('vesc/joy', Joy, self.callback2)
+        rospy.Subscriber('vesc/joy', Joy, self.callback2)
         
         # set control parameters
-        speed = 0.5 # constant travel speed in meters/second
+        speed = 2.0 # constant travel speed in meters/second
         dist_trav = 20.0 # meters to travel in time travel mode
         
         # fill out fields in ackermann steering message (to go straight)
@@ -104,10 +111,10 @@ class WallE():
             #drive_cmd.drive.steering_angle = math.copysign(1.0,-(scan[1]-r60))
             drive_cmd.drive.steering_angle=self.angle
             
-			if self.death:
-				drive_cmd.drive.speed=0
-			elif drive_cmd.drive.speed>0:
-				drive_cmd.drive.speed = speed
+            if self.death:
+                drive_cmd.drive.speed=-.1
+            elif drive_cmd.drive.speed>0:
+                drive_cmd.drive.speed = speed
 
             self.drive.publish(drive_cmd) # post this message
             #Chill out for a bit
