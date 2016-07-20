@@ -4,7 +4,7 @@ import rospy
 import math
 import numpy
 from ackermann_msgs.msg import AckermannDriveStamped # steering messages
-from park_vision.msg import BlobDetections
+from racecar.msg import BlobDetections
 from numpy.core.defchararray import lower
 
 class BlobPID():
