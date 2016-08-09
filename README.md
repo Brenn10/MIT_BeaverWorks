@@ -5,7 +5,7 @@ Holds the code from the first week
 
 Bang Bang Control, PID Control, Lidar
 
-Sadie Allen, Brennan Cain, Karen Nguyen, Rebecca Parham, and Dan Keats
+Sadie Allen, Brennan Cain, Karen Nguyen(potato), Rebecca Parham, and Dan Keats
 
 ## Week 2
 Holds the code from the second week
