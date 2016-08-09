@@ -8,32 +8,48 @@ from racecar.msg import BlobDetections
 from numpy.core.defchararray import lower
 
 class BlobPID():
-    
+    done=False
     e1=0
     e2=0
+    blobColor="RED"
+    def die(self):
+        self.done=True
+        isRight =  blobColor=="RED"
+        WallFollower(isRight)
+
     #get the angle
     def getSteeringCmd(self,error,fullLeft,fullRight):
         Kp =.6
         Kd = .7
-        de= ((self.e1-self.e2)+(error-self.e1))/.2
+        de= (error-self.e2)
         self.e2=self.e1
         self.e1=error
         u=Kp*error+Kd*de
-        return self.clip(fullLeft,fullRight,u)
+        return u
     
     
     #passed to the subscriber
     def callback(self,msg):
-        error=640-msg.locations.x
-        if(error>10):
-            self.drive_cmd.drive.steering_angle = 1
-        elif(error<-10):
-            self.drive_cmd.drive.steering_angle = -1
-        else:
-            self.drive_cmd.drive.steering_angle = 0
-        
+        if self.done: return
+        try:
+            print msg.sizes[0]
             
-        self.drive.publish(drive_cmd) # post this message
+            
+            self.drive_cmd.drive.steering_angle=self.getSteeringCmd(.5-msg.locations[0].x,-1,1)
+            
+            
+            if(msg.colors[0].r>msg.colors[0].g):
+                self.blobColor = "RED"
+            else:
+                self.blobColor = "GREEN"
+              
+            #Die if close enough  
+            if msg.sizes[0]>=150000: 
+                self.die()
+            
+        except Exception:
+            self.drive_cmd.drive.steering_angle = 0
+        self.drive.publish(self.drive_cmd) # post this message
     
     def __init__(self):
         #setup the node
@@ -43,10 +59,10 @@ class BlobPID():
         self.drive = rospy.Publisher('/vesc/ackermann_cmd_mux/input/navigation', AckermannDriveStamped, queue_size=5)
         
         #sets the subscriber
-        rospy.Subscriber('blob_detections', BlobDetections, self.callback2)
+        rospy.Subscriber('blob_detections', BlobDetections, self.callback)
         
          # constant travel speed in meters/second
-        speed = 0.0
+        speed = 2.0
         
         # fill out fields in ackermann steering message (to go straight)
         self.drive_cmd = AckermannDriveStamped()
@@ -55,7 +71,9 @@ class BlobPID():
 def die():
     print "We dead"
     rospy.loginfo("I died")
-try:
-    BlobPID()
-except Exception:
-    die()
+
+if __name__=="__main__":
+    try:
+        BlobPID()
+    except Exception:
+        die()
